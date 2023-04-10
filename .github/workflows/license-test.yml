@@ -3,7 +3,8 @@ name: license check
 on:
   push:
     branches: [main]
-  pull_request:
+  pull_request_target:
+    types: [labeled]
 
 permissions:
   contents: read
@@ -11,6 +12,7 @@ permissions:
 jobs:
   build_pr_license:
     runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'safe to test')
     strategy:
       matrix:
         python-version: ["3.11"]
