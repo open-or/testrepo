@@ -1,0 +1,41 @@
+name: license check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build_pr_license:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - shell: bash
+      id: write-license
+      env:
+        LICENSE: ${{ secrets.LICENSE   }}
+      run: |
+        echo "$LICENSE" > $PWD/gurobi.lic
+        echo "grb_license_file=$PWD/gurobi.lic" >> $GITHUB_OUTPUT
+    - name: check-license
+      env:
+        GRB_LICENSE_FILE: ${{ steps.write-license.outputs.grb_license_file }}
+      run: |
+        python -c "import os; print(['WLSACCESSID' in line for line in open(os.environ['GRB_LICENSE_FILE'])])"
+    - name: run-gurobi
+      env:
+        GRB_LICENSE_FILE: ${{ steps.write-license.outputs.grb_license_file }}
+      run: |
+        python -c "import gurobipy as gp; gp.Env()"
